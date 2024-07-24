@@ -24,6 +24,7 @@
 #include "error.h"
 #include <sys/epoll.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 static inline int epoll_new()
 {
@@ -52,5 +53,7 @@ static inline int epoll_inadd(const int epollfd, const int fd)
 
   return 0;
 }
+
+int epoll_loop(bool*);
 
 #endif //EPOLL_H

@@ -21,37 +21,80 @@
 
 #include "server.h"
 #include "socket.h"
+
+#if defined (__linux__)
+#include "epoll.h"
+#elif defined(__APPLE__)
+// TODO
+#endif
+
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-int server_listen_inet(const unsigned short port)
+static server_t server = {
+  .port = 8080
+};
+
+static int server_setup_inet(void)
 {
-  int listenfd;
   struct sockaddr_in addrs;
 
-  if ((listenfd = socket_new()) < 0) return -1;
+  if ((server.lfd = socket_new()) < 0) return -1;
 
   memset(&addrs, 0, sizeof(addrs));
   addrs.sin_family = PF_INET;
   addrs.sin_addr.s_addr = INADDR_ANY;
-  addrs.sin_port = port;
+  addrs.sin_port = server.port;
 
-  if (bind(listenfd, (struct sockaddr*)&addrs, sizeof(addrs)) < 0)
+  if (bind(server.lfd, (struct sockaddr*)&addrs, sizeof(addrs)) < 0)
   {
     perror("(server) bind");
     goto server_linet_error;
   }
-  if (listen(listenfd, SOMAXCONN) < 0)
+  if (listen(server.lfd, SOMAXCONN) < 0)
   {
     perror("(server) listen");
     goto server_linet_error;
   }
 
-  return listenfd;
+  return 0;
 
   server_linet_error:
-  close(listenfd);
+  close(server.lfd);
   return -1;
+}
+
+int server_start(void)
+{
+  if (server_setup_inet() < 0)
+  {
+    perror("(server) server_setup_inet");
+    return -1;
+  }
+#if defined (__linux__)
+  if ((server.sfd = epoll_new()) < 0)
+  {
+    perror("(server) epoll_new");
+    return -1;
+  }
+  if ((epoll_inadd(server.sfd, server.lfd)) < 0)
+  {
+    perror("(server) epoll_inadd");
+    close(server.sfd);
+    close(server.lfd);
+    return -1;
+  }
+
+  if (epoll_loop(&server.die) < 0)
+  {
+    perror("(server) epoll_loop");
+    close(server.sfd);
+    close(server.lfd);
+    return -1;
+  }
+#elif defined(__APPLE__)
+// TODO
+#endif
 }

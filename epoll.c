@@ -18,20 +18,13 @@
 // OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 // OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#ifndef SERVER_H
-#define SERVER_H
 
-#include <sys/epoll.h>
-#include <stdbool.h>
+#include "epoll.h"
 
-typedef struct server
+int epoll_loop(bool *die)
 {
-  int lfd;
-  int sfd;
-  unsigned short port;
-  bool die;
-} server_t;
+  while (!*die)
+  {
 
-int server_start(void);
-
-#endif //SERVER_H
+  }
+}

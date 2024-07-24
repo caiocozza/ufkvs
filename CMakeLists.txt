@@ -6,6 +6,7 @@ set(CMAKE_C_STANDARD 11)
 add_executable(ugkv main.c
         server.c
         server.h
+        epoll.c
         epoll.h
         socket.h
         error.h)
