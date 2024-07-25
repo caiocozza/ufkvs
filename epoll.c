@@ -29,6 +29,7 @@ int epoll_loop(const int listenfd, const int epollfd, hocon hoconfn, hin hinfn, 
   int listfd;
   struct epoll_event events[UGKV_MAXEVENTS];
 
+  printf("starting main loop\n");
   while (!*die)
   {
     if ((listfd = epoll_wait(epollfd, events, UGKV_MAXEVENTS, -1)) < 0)

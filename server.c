@@ -69,11 +69,12 @@ static int server_setup_inet(void)
   struct sockaddr_in addrs;
 
   if ((server.lfd = socket_new()) < 0) return -1;
+  printf("server lfd %d\n", server.lfd);
 
   memset(&addrs, 0, sizeof(addrs));
   addrs.sin_family = PF_INET;
   addrs.sin_addr.s_addr = INADDR_ANY;
-  addrs.sin_port = server.port;
+  addrs.sin_port = htons(server.port);
 
   if (bind(server.lfd, (struct sockaddr*)&addrs, sizeof(addrs)) < 0)
   {
