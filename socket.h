@@ -21,8 +21,8 @@
 #ifndef SOCKET_H
 #define SOCKET_H
 
-#include "error.h"
 #include <sys/socket.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <fcntl.h>
 
@@ -37,7 +37,7 @@ static inline int socket_set_nblocking(const int fd)
 
   socket_snb_error:
   perror("(socket) fcntl");
-  return GENERIC_CMN_ERROR;
+  return -1;
 }
 
 static inline int socket_new()
@@ -47,16 +47,41 @@ static inline int socket_new()
   if ((listenfd = socket(PF_INET, SOCK_STREAM, 0)) < 0)
   {
     perror("(socket) socket");
-    return GENERIC_CMN_ERROR;
+    return -1;
   }
 
   if ((flags = socket_set_nblocking(listenfd)) < 0)
   {
     perror("(socket) socket_set_nblocking");
-    return GENERIC_CMN_ERROR;
+    return -1;
   }
 
   return listenfd;
+}
+
+static inline int socket_accept(const int fd)
+{
+  int confd;
+  struct sockaddr addr;
+  socklen_t laddr = sizeof(addr);
+
+  if ((confd = accept(fd, (struct sockaddr*)&addr, &laddr)) < 0)
+  {
+    perror("(socket) accept");
+    close(confd); //??
+    return -1;
+  }
+
+  // ? getnameinfo ?
+
+  if (socket_set_nblocking(confd) < 0)
+  {
+    perror("(socket) socket_set_nblocking");
+    close(confd);
+    return -1;
+  }
+
+  return confd;
 }
 
 #endif //SOCKET_H

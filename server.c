@@ -39,17 +39,29 @@ static server_t server = {
 
 static void server_connection_handler(void)
 {
+  int fd;
+  if ((fd = socket_accept(server.lfd)) < 0)
+  {
+    perror("(server) socket_accept");
+    return;
+  }
 
+#if defined (__linux__)
+  if (epoll_inadd(server.sfd, fd) < 0)
+  {
+    perror("(server) epoll_inadd");
+    close(fd);
+  }
+#elif defined(__APPLE__)
+#endif
 }
 
 static void server_output_handler(void)
 {
-
 }
 
 static void server_input_handler(int fd)
 {
-
 }
 
 static int server_setup_inet(void)
@@ -105,10 +117,10 @@ int server_start(void)
   if (epoll_loop(
       server.lfd,
       server.sfd,
-      &server.die,
       &server_connection_handler,
       &server_input_handler,
-      &server_output_handler
+      &server_output_handler,
+      &server.die
     ) < 0)
   {
     perror("(server) epoll_loop");
