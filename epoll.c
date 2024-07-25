@@ -21,10 +21,42 @@
 
 #include "epoll.h"
 
-int epoll_loop(bool *die)
+#define UGKV_MAXEVENTS 512
+
+int epoll_loop(const int listenfd, const int epollfd, bool *die)
 {
+  int listfd;
+  struct epoll_event events[UGKV_MAXEVENTS];
+
   while (!*die)
   {
+    if ((listfd = epoll_wait(epollfd, events, UGKV_MAXEVENTS, -1)) < 0)
+    {
+      perror("(epoll) epoll_wait");
+      return -1;
+    }
 
+    for (unsigned int ifd = 0; ifd < listfd; ++ifd)
+    {
+      // handle new connection
+      if (events[ifd].data.fd == listenfd)
+      {
+
+      } else if (events[ifd].events & EPOLLIN) // handle input data
+      {
+
+      } else if (events[ifd].events & EPOLLOUT) // handle output data
+      {
+
+      } else if (events[ifd].events & EPOLLERR) // handle error
+      {
+        // requires closing
+      } else if (events[ifd].events & EPOLLHUP) // handle not ready to read state
+      {
+        // requires closing
+      }
+    }
   }
+
+  return 0;
 }

@@ -87,7 +87,7 @@ int server_start(void)
     return -1;
   }
 
-  if (epoll_loop(&server.die) < 0)
+  if (epoll_loop(server.lfd, server.sfd, &server.die) < 0)
   {
     perror("(server) epoll_loop");
     close(server.sfd);

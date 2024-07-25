@@ -54,6 +54,6 @@ static inline int epoll_inadd(const int epollfd, const int fd)
   return 0;
 }
 
-int epoll_loop(bool*);
+int epoll_loop(int,int,bool*);
 
 #endif //EPOLL_H
