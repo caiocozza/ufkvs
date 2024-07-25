@@ -37,6 +37,21 @@ static server_t server = {
   .port = 8080
 };
 
+static void server_connection_handler(void)
+{
+
+}
+
+static void server_output_handler(void)
+{
+
+}
+
+static void server_input_handler(int fd)
+{
+
+}
+
 static int server_setup_inet(void)
 {
   struct sockaddr_in addrs;
@@ -87,7 +102,14 @@ int server_start(void)
     return -1;
   }
 
-  if (epoll_loop(server.lfd, server.sfd, &server.die) < 0)
+  if (epoll_loop(
+      server.lfd,
+      server.sfd,
+      &server.die,
+      &server_connection_handler,
+      &server_input_handler,
+      &server_output_handler
+    ) < 0)
   {
     perror("(server) epoll_loop");
     close(server.sfd);

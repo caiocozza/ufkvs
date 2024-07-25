@@ -26,6 +26,10 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+typedef void (*hin)(int);
+typedef void (*hout)(void);
+typedef void (*hocon)(void);
+
 static inline int epoll_new()
 {
   int epollfd;
@@ -54,6 +58,6 @@ static inline int epoll_inadd(const int epollfd, const int fd)
   return 0;
 }
 
-int epoll_loop(int,int,bool*);
+int epoll_loop(int,int, hocon hoconfn, hin hinfn, hout houtfn, bool*);
 
 #endif //EPOLL_H

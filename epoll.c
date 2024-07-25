@@ -20,10 +20,11 @@
 // OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "epoll.h"
+#include <unistd.h>
 
 #define UGKV_MAXEVENTS 512
 
-int epoll_loop(const int listenfd, const int epollfd, bool *die)
+int epoll_loop(const int listenfd, const int epollfd, hocon hoconfn, hin hinfn, hout houtfn, bool *die)
 {
   int listfd;
   struct epoll_event events[UGKV_MAXEVENTS];
@@ -39,21 +40,17 @@ int epoll_loop(const int listenfd, const int epollfd, bool *die)
     for (unsigned int ifd = 0; ifd < listfd; ++ifd)
     {
       // handle new connection
-      if (events[ifd].data.fd == listenfd)
+      if (events[ifd].data.fd == listenfd) hoconfn();
+      else if (events[ifd].events & EPOLLIN) hinfn(events[ifd].data.fd);
+      else if (events[ifd].events & EPOLLOUT) houtfn();
+      else if (events[ifd].events & EPOLLERR)
       {
-
-      } else if (events[ifd].events & EPOLLIN) // handle input data
+        perror("(epoll) rcv EPOLLERR");
+        close(events[ifd].data.fd);
+      } else if (events[ifd].events & EPOLLHUP)
       {
-
-      } else if (events[ifd].events & EPOLLOUT) // handle output data
-      {
-
-      } else if (events[ifd].events & EPOLLERR) // handle error
-      {
-        // requires closing
-      } else if (events[ifd].events & EPOLLHUP) // handle not ready to read state
-      {
-        // requires closing
+        perror("(epoll) rcv EPOLLHUP");
+        close(events[ifd].data.fd);
       }
     }
   }
