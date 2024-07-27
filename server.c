@@ -51,6 +51,7 @@ static void server_connection_handler(void)
   {
     perror("(server) epoll_inadd");
     close(fd);
+    return;
   }
 #elif defined(__APPLE__)
 #endif
@@ -69,7 +70,6 @@ static int server_setup_inet(void)
   struct sockaddr_in addrs;
 
   if ((server.lfd = socket_new()) < 0) return -1;
-  printf("server lfd %d\n", server.lfd);
 
   memset(&addrs, 0, sizeof(addrs));
   addrs.sin_family = PF_INET;
@@ -96,6 +96,7 @@ static int server_setup_inet(void)
 
 int server_start(void)
 {
+
   if (server_setup_inet() < 0)
   {
     perror("(server) server_setup_inet");
@@ -104,17 +105,32 @@ int server_start(void)
 #if defined (__linux__)
   if ((server.sfd = epoll_new()) < 0)
   {
-    perror("(server) epoll_new");
+    perror("(server) sfd epoll_new");
     return -1;
   }
   if ((epoll_inadd(server.sfd, server.lfd)) < 0)
   {
-    perror("(server) epoll_inadd");
+    perror("(server) sfd epoll_inadd");
     close(server.sfd);
     close(server.lfd);
     return -1;
   }
 
+  if ((server.wfd = epoll_new()) < 0)
+  {
+    perror("(server) wfd epoll_new");
+    close(server.sfd);
+    close(server.lfd);
+    return -1;
+  }
+
+  // here is not sfd but a new one we will create
+  if (worker_setup(server.wfd, &server.workers) < 0)
+  {
+    // TODO: handle threads must clean and die
+  }
+
+  printf("(server) starting mainloop\n");
   if (epoll_loop(
       server.lfd,
       server.sfd,

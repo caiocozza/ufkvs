@@ -18,25 +18,61 @@
 // OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 // OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#ifndef SERVER_H
-#define SERVER_H
 
 #include "worker.h"
-#include <pthread.h>
-#include <sys/epoll.h>
-#include <stdbool.h>
+#if defined(__linux__)
+#include "epoll.h"
+#elif defined(__APPLE__)
+// TODO
+#endif
 
-typedef struct server
+static int sfd = -1;
+
+static void worker_input_handler(int fd)
 {
-  int lfd;
-  int sfd;
-  int wfd;
-  unsigned short port;
-  bool die;
-  pthread_t workers[WORKERS];
+  // will decode commands and process
+}
 
-} server_t;
+static void worker_output_handler(void)
+{
+  // will data output to clients
+}
 
-int server_start(void);
+static void *worker_fn(void *args)
+{
+  if (sfd < 0)
+  {
+    perror("(worker) sfd not set");
+    return NULL;
+  }
 
-#endif //SERVER_H
+  printf("(worker) status: live\n");
+  bool die = false;
+#if defined(__linux__)
+  if (epoll_loop(
+      -1,
+      sfd,
+      NULL,
+      &worker_input_handler,
+      &worker_output_handler,
+      &die
+    ) < 0)
+  {
+    // TODO: handle
+  }
+#elif defined(__APPLE__)
+// TODO
+#endif
+}
+
+int worker_setup(int fd, pthread_t (*workers)[WORKERS])
+{
+  sfd = fd;
+  for (unsigned int iw = 0; iw < WORKERS; ++iw)
+    if (pthread_create(&(*workers)[iw], NULL, worker_fn, NULL) < 0)
+    {
+      perror("(worker) pthread_create");
+      return -1;
+    }
+  return 0;
+}

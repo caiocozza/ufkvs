@@ -29,7 +29,6 @@ int epoll_loop(const int listenfd, const int epollfd, hocon hoconfn, hin hinfn, 
   int listfd;
   struct epoll_event events[UGKV_MAXEVENTS];
 
-  printf("starting main loop\n");
   while (!*die)
   {
     if ((listfd = epoll_wait(epollfd, events, UGKV_MAXEVENTS, -1)) < 0)
@@ -41,9 +40,9 @@ int epoll_loop(const int listenfd, const int epollfd, hocon hoconfn, hin hinfn, 
     for (unsigned int ifd = 0; ifd < listfd; ++ifd)
     {
       // handle new connection
-      if (events[ifd].data.fd == listenfd) hoconfn();
-      else if (events[ifd].events & EPOLLIN) hinfn(events[ifd].data.fd);
-      else if (events[ifd].events & EPOLLOUT) houtfn();
+      if (hoconfn != NULL && events[ifd].data.fd == listenfd) hoconfn();
+      else if (hinfn != NULL && events[ifd].events & EPOLLIN) hinfn(events[ifd].data.fd);
+      else if (houtfn != NULL && events[ifd].events & EPOLLOUT) houtfn();
       else if (events[ifd].events & EPOLLERR)
       {
         perror("(epoll) rcv EPOLLERR");

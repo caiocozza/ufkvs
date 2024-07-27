@@ -18,25 +18,16 @@
 // OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 // OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef WORKER_H
+#define WORKER_H
 
-#include "worker.h"
 #include <pthread.h>
 #include <sys/epoll.h>
+#include <stdio.h>
 #include <stdbool.h>
 
-typedef struct server
-{
-  int lfd;
-  int sfd;
-  int wfd;
-  unsigned short port;
-  bool die;
-  pthread_t workers[WORKERS];
+#define WORKERS 2
 
-} server_t;
+int worker_setup(int,pthread_t(*)[WORKERS]);
 
-int server_start(void);
-
-#endif //SERVER_H
+#endif //WORKER_H
