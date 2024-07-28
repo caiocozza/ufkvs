@@ -13,6 +13,8 @@ add_executable(ugkv main.c
         socket.h
         worker.h
         worker.c
+        client.c
+        client.h
         error.h)
 
 target_link_libraries(ugkv PRIVATE Threads::Threads)

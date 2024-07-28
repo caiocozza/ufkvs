@@ -20,6 +20,7 @@
 // OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "epoll.h"
+#include "client.h"
 #include <unistd.h>
 
 #define UGKV_MAXEVENTS 512
@@ -47,10 +48,12 @@ int epoll_loop(const int listenfd, const int epollfd, hocon hoconfn, hin hinfn, 
       {
         perror("(epoll) rcv EPOLLERR");
         close(events[ifd].data.fd);
+        if (client_clear(events[ifd].data.fd) < 0) perror("(epoll) client_clear");
       } else if (events[ifd].events & EPOLLHUP)
       {
         perror("(epoll) rcv EPOLLHUP");
         close(events[ifd].data.fd);
+        if (client_clear(events[ifd].data.fd) < 0) perror("(epoll) client_clear");
       }
     }
   }

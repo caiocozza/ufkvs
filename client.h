@@ -18,57 +18,23 @@
 // OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 // OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#ifndef EPOLL_H
-#define EPOLL_H
+#ifndef CLIENT_H
+#define CLIENT_H
 
-#include "error.h"
-#include <sys/epoll.h>
-#include <stdio.h>
+#include <pthread.h>
 #include <stdbool.h>
 
-typedef void (*hin)(int);
-typedef void (*hout)(void);
-typedef void (*hocon)(void);
-
-static inline int epoll_new()
+typedef struct client
 {
-  int epollfd;
+  pthread_mutex_t mtx;
+  size_t buffersize;
+  int fd;
+  bool locked;
+  char *buffer;
+} client_t;
 
-  if ((epollfd = epoll_create1(0)) < 0)
-  {
-    perror("(epoll) epoll_create1");
-    return GENERIC_CMN_ERROR;
-  }
-
-  return epollfd;
-}
-
-static inline int epoll_inadd(const int epollfd, const int fd)
-{
-  struct epoll_event events;
-  events.data.fd = fd;
-  events.events = EPOLLIN | EPOLLET;
-
-  if (epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &events) < 0)
-  {
-    perror("(epoll) epoll_ctl");
-    return -1;
-  }
-
-  return 0;
-}
-
-static inline int epoll_delete(const int epollfd, const int fd)
-{
-  if (epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, NULL) < 0)
-  {
-    perror("(epoll) epoll_ctl");
-    return -1;
-  }
-
-  return 0;
-}
-
-int epoll_loop(int,int, hocon hoconfn, hin hinfn, hout houtfn, bool*);
-
-#endif //EPOLL_H
+void client_setup(void);
+int client_clear(int);
+int client_set(int);
+int client_append(const int,const char*,const size_t);
+#endif //CLIENT_H

@@ -20,17 +20,45 @@
 // OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "worker.h"
+#include "client.h"
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #if defined(__linux__)
 #include "epoll.h"
 #elif defined(__APPLE__)
 // TODO
 #endif
 
-static int sfd = -1;
+#define WORKER_BUFFER 4096
+
+static int wfd = -1;
 
 static void worker_input_handler(int fd)
 {
-  // will decode commands and process
+  int bytes;
+  char buffer[WORKER_BUFFER];
+
+  if ((bytes = read(fd, buffer, WORKER_BUFFER)) <= 0)
+  {
+    printf("(worker) %d bytes rec: %d\n", fd, bytes);
+#if defined(__linux__)
+    if (epoll_delete(wfd, fd) < 0) perror("(worker) epoll_delete");
+#elif defined(__APPLE__)
+    // TODO
+#endif
+    close(fd);
+    if (client_clear(fd) < 0) perror("(worker) client_clear");
+    return;
+  }
+  printf("(worker) %d bytes rec: %d\n", fd, bytes);
+  char *data = malloc(bytes);
+  if (data != NULL)
+  {
+    memcpy(data, buffer, bytes);
+    if (client_append(fd, data, bytes) < 0) perror("(worker) client_append");
+    free(data);
+  }
 }
 
 static void worker_output_handler(void)
@@ -40,7 +68,7 @@ static void worker_output_handler(void)
 
 static void *worker_fn(void *args)
 {
-  if (sfd < 0)
+  if (wfd < 0)
   {
     perror("(worker) sfd not set");
     return NULL;
@@ -51,7 +79,7 @@ static void *worker_fn(void *args)
 #if defined(__linux__)
   if (epoll_loop(
       -1,
-      sfd,
+      wfd,
       NULL,
       &worker_input_handler,
       &worker_output_handler,
@@ -67,7 +95,8 @@ static void *worker_fn(void *args)
 
 int worker_setup(int fd, pthread_t (*workers)[WORKERS])
 {
-  sfd = fd;
+  wfd = fd;
+  client_setup();
   for (unsigned int iw = 0; iw < WORKERS; ++iw)
     if (pthread_create(&(*workers)[iw], NULL, worker_fn, NULL) < 0)
     {

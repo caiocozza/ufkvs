@@ -21,6 +21,7 @@
 
 #include "server.h"
 #include "socket.h"
+#include "client.h"
 
 #if defined (__linux__)
 #include "epoll.h"
@@ -46,8 +47,9 @@ static void server_connection_handler(void)
     return;
   }
 
+  printf("(server) sock on: %d\n", fd);
 #if defined (__linux__)
-  if (epoll_inadd(server.sfd, fd) < 0)
+  if (epoll_inadd(server.wfd, fd) < 0)
   {
     perror("(server) epoll_inadd");
     close(fd);
@@ -55,6 +57,11 @@ static void server_connection_handler(void)
   }
 #elif defined(__APPLE__)
 #endif
+  if(client_set(fd) < 0)
+  {
+    perror("(server) client_set");
+    close(fd);
+  }
 }
 
 static void server_output_handler(void)
