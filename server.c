@@ -49,10 +49,18 @@ static void server_connection_handler(void)
 
   printf("(server) sock on: %d\n", fd);
 #if defined (__linux__)
-  if (epoll_inadd(server.wfd, fd) < 0)
+  if (epoll_inadd(server.wfd, fd, true) < 0)
   {
     perror("(server) epoll_inadd");
     close(fd);
+    return;
+  }
+
+  if (socket_set_nblocking(fd) < 0)
+  {
+    if (epoll_delete(server.wfd, fd) < 0) perror("(server) epoll_delete");
+    close(fd);
+    if (client_clear(fd) < 0) perror("(server) client_clear");
     return;
   }
 #elif defined(__APPLE__)
@@ -115,7 +123,7 @@ int server_start(void)
     perror("(server) sfd epoll_new");
     return -1;
   }
-  if ((epoll_inadd(server.sfd, server.lfd)) < 0)
+  if ((epoll_inadd(server.sfd, server.lfd, false)) < 0)
   {
     perror("(server) sfd epoll_inadd");
     close(server.sfd);
@@ -126,6 +134,15 @@ int server_start(void)
   if ((server.wfd = epoll_new()) < 0)
   {
     perror("(server) wfd epoll_new");
+    close(server.sfd);
+    close(server.lfd);
+    return -1;
+  }
+
+  if (socket_set_nblocking(server.wfd) < 0)
+  {
+    perror("(server) wfd socket_set_nblocking");
+    close(server.wfd);
     close(server.sfd);
     close(server.lfd);
     return -1;

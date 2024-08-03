@@ -43,11 +43,12 @@ static inline int epoll_new()
   return epollfd;
 }
 
-static inline int epoll_inadd(const int epollfd, const int fd)
+static inline int epoll_inadd(const int epollfd, const int fd, const bool oneshot)
 {
   struct epoll_event events;
   events.data.fd = fd;
   events.events = EPOLLIN | EPOLLET;
+  if (oneshot) events.events |= EPOLLONESHOT;
 
   if (epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &events) < 0)
   {
@@ -58,8 +59,24 @@ static inline int epoll_inadd(const int epollfd, const int fd)
   return 0;
 }
 
+static inline int epoll_inmod(const int epollfd, const int fd)
+{
+  struct epoll_event events;
+  events.data.fd = fd;
+  events.events = EPOLLIN | EPOLLET | EPOLLONESHOT;
+
+  if (epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, &events) < 0)
+  {
+    perror("(epoll) epoll_ctl");
+    return -1;
+  }
+
+  return 0;
+}
+
 static inline int epoll_delete(const int epollfd, const int fd)
 {
+  printf("epoll deleted: %d\n", fd);
   if (epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, NULL) < 0)
   {
     perror("(epoll) epoll_ctl");

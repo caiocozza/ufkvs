@@ -21,6 +21,7 @@
 #include "client.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #define CLIENTS 8192
 
@@ -62,8 +63,8 @@ int client_set(const int fd)
 
 int client_append(const int fd, const char *data, const size_t datasize)
 {
-  unsigned int messagesize, messageid;
-  unsigned short messagecmd;
+  unsigned int messagesize = 0, messageid = 0;
+  unsigned short messagecmd = 0;
 
   if (fd > CLIENTS) return -1;
   if (clients[fd].fd < 0) return -1;
@@ -102,7 +103,7 @@ int client_append(const int fd, const char *data, const size_t datasize)
   // if message is not ready
   // unlock mtx
 
-  while (clients[fd].buffersize > 0)
+  while (clients[fd].buffersize > 10)
   {
     memcpy(&messagesize, clients[fd].buffer, 4);
     if (messagesize > clients[fd].buffersize) goto client_unlock;
@@ -117,6 +118,7 @@ int client_append(const int fd, const char *data, const size_t datasize)
     }
 
     // dispatch message here
+    write(fd, message, messagesize);
     // ...
     // now free
     printf("%s\n", message);

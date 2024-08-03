@@ -22,6 +22,7 @@
 #include "epoll.h"
 #include "client.h"
 #include <unistd.h>
+#include <errno.h>
 
 #define UGKV_MAXEVENTS 512
 
@@ -34,6 +35,11 @@ int epoll_loop(const int listenfd, const int epollfd, hocon hoconfn, hin hinfn, 
   {
     if ((listfd = epoll_wait(epollfd, events, UGKV_MAXEVENTS, -1)) < 0)
     {
+      if (errno == EINTR)
+      {
+        printf("EINRT\n");
+        continue;
+      }
       perror("(epoll) epoll_wait");
       return -1;
     }
@@ -41,20 +47,21 @@ int epoll_loop(const int listenfd, const int epollfd, hocon hoconfn, hin hinfn, 
     for (unsigned int ifd = 0; ifd < listfd; ++ifd)
     {
       // handle new connection
-      if (hoconfn != NULL && events[ifd].data.fd == listenfd) hoconfn();
-      else if (hinfn != NULL && events[ifd].events & EPOLLIN) hinfn(events[ifd].data.fd);
-      else if (houtfn != NULL && events[ifd].events & EPOLLOUT) houtfn();
-      else if (events[ifd].events & EPOLLERR)
+      int fd = events[ifd].data.fd;
+      printf("%d\n", fd);
+      if (events[ifd].events & (EPOLLERR | EPOLLHUP))
       {
-        perror("(epoll) rcv EPOLLERR");
-        close(events[ifd].data.fd);
-        if (client_clear(events[ifd].data.fd) < 0) perror("(epoll) client_clear");
-      } else if (events[ifd].events & EPOLLHUP)
-      {
-        perror("(epoll) rcv EPOLLHUP");
-        close(events[ifd].data.fd);
-        if (client_clear(events[ifd].data.fd) < 0) perror("(epoll) client_clear");
+          if (events[ifd].events & EPOLLERR) perror("(epoll) EPOLLERR");
+          if (events[ifd].events & EPOLLHUP) perror("(epoll) EPOLLHUP");
+
+          close(fd);
+          if (client_clear(fd) < 0) perror("(epoll) client_clear");
+          continue;
       }
+
+      if (hoconfn != NULL && fd == listenfd) hoconfn();
+      else if (hinfn != NULL && events[ifd].events & EPOLLIN) hinfn(fd);
+      else if (houtfn != NULL && events[ifd].events & EPOLLOUT) houtfn();
     }
   }
 

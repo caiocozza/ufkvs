@@ -24,13 +24,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #if defined(__linux__)
 #include "epoll.h"
 #elif defined(__APPLE__)
 // TODO
 #endif
 
-#define WORKER_BUFFER 4096
+#define WORKER_BUFFER 12
 
 static int wfd = -1;
 
@@ -41,7 +43,8 @@ static void worker_input_handler(int fd)
 
   if ((bytes = read(fd, buffer, WORKER_BUFFER)) <= 0)
   {
-    printf("(worker) %d bytes rec: %d\n", fd, bytes);
+    if (bytes == 0) printf("(worker) connection closed by peer, fd: %d\n", fd);
+    else perror("(worker) read error");
 #if defined(__linux__)
     if (epoll_delete(wfd, fd) < 0) perror("(worker) epoll_delete");
 #elif defined(__APPLE__)
@@ -51,7 +54,6 @@ static void worker_input_handler(int fd)
     if (client_clear(fd) < 0) perror("(worker) client_clear");
     return;
   }
-  printf("(worker) %d bytes rec: %d\n", fd, bytes);
   char *data = malloc(bytes);
   if (data != NULL)
   {
@@ -59,6 +61,10 @@ static void worker_input_handler(int fd)
     if (client_append(fd, data, bytes) < 0) perror("(worker) client_append");
     free(data);
   }
+  #if defined(__linux__)
+  epoll_inmod(wfd, fd);
+  #elif defined(__APPLE__)
+  #endif
 }
 
 static void worker_output_handler(void)

@@ -6,32 +6,54 @@ def main():
     server_address = ('localhost', 8080)
 
     # Create a TCP/IP socket
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    except socket.error as err:
+        print(f"Socket creation failed with error {err}")
+        return
 
     try:
         # Connect the socket to the server
         sock.connect(server_address)
+    except socket.gaierror:
+        print("Address-related error connecting to server")
+        return
+    except socket.herror:
+        print("Connection error")
+        return
+    except socket.error as err:
+        print(f"Connection failed with error {err}")
+        return
 
+    try:
         # Define the message in bytes
-        message = bytes([10, 0, 0, 0, 1, 0, 1, 0, 0, 0, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63])
+        message = bytes([15, 0, 0, 0, 1, 0, 1, 0, 0, 0, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 65, 65, 65, 65, 65])
 
         # Send the message to the server
-        sock.sendall(message)
-        print(f"Sent: {message}")
+        try:
+            sock.sendall(message)
+            print(f"Sent: {message}")
+        except socket.error as err:
+            print(f"Sending data failed with error {err}")
+            return
 
-        # Properly shutdown the sending side of the socket
-        #sock.shutdown(socket.SHUT_WR)
-
-        # Wait for 2 seconds before closing the socket
-        time.sleep(2)
+        # Wait for a message back from the server
+        try:
+            received_message = sock.recv(1024)  # Buffer size set to 1024 bytes
+            #print(f"Received: {received_message}")
+        except socket.error as err:
+            print(f"Receiving data failed with error {err}")
+            return
 
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"An unexpected error occurred: {e}")
 
     finally:
-        # Close the socket
-        sock.close()
-        print("Socket closed")
+        try:
+            # Close the socket
+            sock.close()
+        except socket.error as err:
+            print(f"Closing socket failed with error {err}")
 
 if __name__ == "__main__":
     main()
