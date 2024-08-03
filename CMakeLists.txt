@@ -15,6 +15,8 @@ add_executable(ugkv main.c
         worker.c
         client.c
         client.h
+        table.h
+        table.c
         error.h)
 
 target_link_libraries(ugkv PRIVATE Threads::Threads)

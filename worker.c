@@ -62,7 +62,12 @@ static void worker_input_handler(int fd)
     free(data);
   }
   #if defined(__linux__)
-  epoll_inmod(wfd, fd);
+  if (epoll_inmod(wfd, fd) < 0)
+  {
+    if (epoll_delete(wfd, fd) < 0) perror("(worker) epoll_delete");
+    close(fd);
+    if (client_clear(fd) < 0) perror("(worker) client_clear");
+  }
   #elif defined(__APPLE__)
   #endif
 }
