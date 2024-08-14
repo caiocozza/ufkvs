@@ -19,6 +19,7 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 // OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "client.h"
+#include "processor.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -106,23 +107,22 @@ int client_append(const int fd, const char *data, const size_t datasize)
   while (clients[fd].buffersize > 10)
   {
     memcpy(&messagesize, clients[fd].buffer, 4);
-    if (messagesize > clients[fd].buffersize) goto client_unlock;
+    if (messagesize > (clients[fd].buffersize - 10)) goto client_unlock;
 
     memcpy(&messagecmd, clients[fd].buffer + 4, 2);
     memcpy(&messageid, clients[fd].buffer + 6, 4);
-    char *message = strndup(clients[fd].buffer + 10, messagesize);
-    if (message == NULL)
-    {
-      perror("(client) strndup");
-      return client_clear(fd);
-    }
+
+    char data[messagesize];
+    memcpy(&data, clients[fd].buffer + 10, messagesize);
 
     // dispatch message here
-    write(fd, message, messagesize);
+    //write(fd, message, messagesize);
+    if (processsor_enqueue(fd, messagesize, data) < 0)
+    {
+      exit(EXIT_FAILURE);
+    }
     // ...
     // now free
-    printf("%s\n", message);
-    free(message);
     int diff = clients[fd].buffersize - (messagesize + 10);
     if (diff > 0)
     {

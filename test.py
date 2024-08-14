@@ -40,7 +40,7 @@ def main():
         # Wait for a message back from the server
         try:
             received_message = sock.recv(1024)  # Buffer size set to 1024 bytes
-            #print(f"Received: {received_message}")
+            print(f"Received: {received_message}")
         except socket.error as err:
             print(f"Receiving data failed with error {err}")
             return

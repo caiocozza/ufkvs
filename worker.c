@@ -58,6 +58,7 @@ static void worker_input_handler(int fd)
   if (data != NULL)
   {
     memcpy(data, buffer, bytes);
+    printf("bytes: %d\n", bytes);
     if (client_append(fd, data, bytes) < 0) perror("(worker) client_append");
     free(data);
   }

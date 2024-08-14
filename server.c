@@ -22,6 +22,7 @@
 #include "server.h"
 #include "socket.h"
 #include "client.h"
+#include "processor.h"
 
 #if defined (__linux__)
 #include "epoll.h"
@@ -142,6 +143,14 @@ int server_start(void)
   if (socket_set_nblocking(server.wfd) < 0)
   {
     perror("(server) wfd socket_set_nblocking");
+    close(server.wfd);
+    close(server.sfd);
+    close(server.lfd);
+    return -1;
+  }
+
+  if (processor_setup_workers(server.sfd) < 0)
+  {
     close(server.wfd);
     close(server.sfd);
     close(server.lfd);
