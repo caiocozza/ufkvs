@@ -28,9 +28,43 @@ static processor_t proc = {
   .cnd  = PTHREAD_COND_INITIALIZER,
   .mtx  = PTHREAD_MUTEX_INITIALIZER,
   .head = NULL,
-  .tail = NULL,
-  .ofd  = -1
+  .tail = NULL
 };
+
+static int processor_exec(const processor_item_t *item)
+{
+  unsigned int keysize, valuesize;
+
+  // distinguish data here
+  switch (item->cmd)
+  {
+  case 1:
+    memcpy(&keysize, item->data, 4);
+    memcpy(&valuesize, item->data + 4, 4);
+
+    char *key = malloc(keysize);
+    if (key == NULL) return -1;
+
+    char *value = malloc(valuesize);
+    if (value == NULL)
+    {
+      free(key);
+      return -1;
+    }
+
+    memcpy(key, item->data + 8, keysize);
+    memcpy(value, item->data + 8 + keysize, valuesize);
+
+    write(item->fd, value, valuesize);
+
+    free(key);
+    free(value);
+    break;
+  
+  default:
+    break;
+  }
+}
 
 static void *processor_worker_fn(void *args)
 {
@@ -55,10 +89,10 @@ static void *processor_worker_fn(void *args)
     if (pthread_mutex_unlock(&proc.mtx) < 0)
     {
       perror("(processor) pthread_mutex_unlock");
-      exit(EXIT_FAILURE);     
+      exit(EXIT_FAILURE);
     }
     // free to proc
-    write(item->fd, item->data, item->size); // TODO: tmp, must use the ofd (output)
+    processor_exec(item);
     // -------
 
     // after processing we can free the proc item
@@ -67,14 +101,22 @@ static void *processor_worker_fn(void *args)
   }
 }
 
-int processsor_enqueue(int fd, unsigned int size, const char* data)
+int processsor_enqueue(int fd, unsigned int size, unsigned int id, unsigned short cmd, const char* data)
 {
-  if (proc.ofd == -1) return -1;
   processor_item_t *item = malloc(sizeof(processor_item_t));
   if (item == NULL) return -1;
   
-  item->data = strdup(data);
+  item->data = malloc(size);
+  if (item->data == NULL)
+  {
+    free(item);
+    return -1;
+  }
+
+  memcpy(item->data, data, size);
   item->fd = fd;
+  item->cmd = cmd;
+  item->id = id;
   item->size = size;
   item->nxt = NULL;
 
@@ -119,9 +161,8 @@ int processsor_enqueue(int fd, unsigned int size, const char* data)
   return 0;
 }
 
-int processor_setup_workers(int ofd)
+int processor_setup_workers(void)
 {
-  proc.ofd = ofd;
   for (unsigned int iw = 0; iw < PROCESSOR_WORKERS; ++iw)
     if (pthread_create(&proc.workers[iw], NULL, processor_worker_fn, NULL) < 0)
     {

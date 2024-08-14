@@ -27,22 +27,22 @@
 
 typedef struct processor_item
 {
+  unsigned short cmd;
   int fd; //clients file descriptor
-  unsigned int size;
+  unsigned int size, id;
   char *data;
   struct processor_item *nxt;
 } processor_item_t;
 
 typedef struct processor
 {
-  int ofd; //output file descriptor
   pthread_mutex_t mtx;
   pthread_cond_t cnd;
   pthread_t workers[PROCESSOR_WORKERS];
   struct processor_item *head, *tail;
 } processor_t;
 
-int processor_setup_workers(int ofd);
-int processsor_enqueue(int,unsigned int,const char*);
+int processor_setup_workers(void);
+int processsor_enqueue(int,unsigned int, unsigned int, unsigned short, const char*);
 
 #endif //PROCESSOR_H

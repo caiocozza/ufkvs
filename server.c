@@ -149,7 +149,7 @@ int server_start(void)
     return -1;
   }
 
-  if (processor_setup_workers(server.sfd) < 0)
+  if (processor_setup_workers() < 0)
   {
     close(server.wfd);
     close(server.sfd);

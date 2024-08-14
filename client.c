@@ -117,7 +117,7 @@ int client_append(const int fd, const char *data, const size_t datasize)
 
     // dispatch message here
     //write(fd, message, messagesize);
-    if (processsor_enqueue(fd, messagesize, data) < 0)
+    if (processsor_enqueue(fd, messagesize, messageid, messagecmd, data) < 0)
     {
       exit(EXIT_FAILURE);
     }

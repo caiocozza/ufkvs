@@ -27,7 +27,7 @@ def main():
 
     try:
         # Define the message in bytes
-        message = bytes([15, 0, 0, 0, 1, 0, 1, 0, 0, 0, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 65, 65, 65, 65, 65])
+        message = bytes([15, 0, 0, 0, 1, 0, 1, 0, 0, 0, 2, 0, 0, 0, 5, 0, 0, 0, 63, 63, 65, 65, 65, 65, 65])
 
         # Send the message to the server
         try:
