@@ -19,6 +19,7 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 // OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "processor.h"
+#include "table.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,38 +32,77 @@ static processor_t proc = {
   .tail = NULL
 };
 
-static int processor_exec(const processor_item_t *item)
+static int processor_get(const processor_item_t *item)
+{
+  unsigned int keysize;
+
+  memcpy(&keysize, item->data, 4);
+
+  char *key = malloc(keysize);
+  if (key == NULL) return -1;
+
+  memcpy(key, item->data + 4, keysize);
+
+  const table_s *found = table_getbk(key);
+  if (found == NULL)
+  {
+    free(key);
+    return -1;
+  }
+
+  write(item->fd, found->value, found->lvalue);
+  free(key);
+
+  return 0;
+}
+
+static int processor_set(const processor_item_t *item)
 {
   unsigned int keysize, valuesize;
+
+  memcpy(&keysize, item->data, 4);
+  memcpy(&valuesize, item->data + 4, 4);
+
+  char *key = malloc(keysize);
+  if (key == NULL) return -1;
+
+  char *value = malloc(valuesize);
+  if (value == NULL)
+  {
+    free(key);
+    return -1;
+  }
+
+  memcpy(key, item->data + 8, keysize);
+  memcpy(value, item->data + 8 + keysize, valuesize);
+
+  if (table_add(keysize, valuesize, key, value) < 0)
+  {
+    free(key);
+    free(value);
+    return -1;
+  }
+
+  write(item->fd, value, valuesize);
+
+  free(key);
+  free(value);
+  return 0;
+}
+
+static int processor_exec(const processor_item_t *item)
+{
+  int ret;
 
   // distinguish data here
   switch (item->cmd)
   {
   case 1:
-    memcpy(&keysize, item->data, 4);
-    memcpy(&valuesize, item->data + 4, 4);
-
-    char *key = malloc(keysize);
-    if (key == NULL) return -1;
-
-    char *value = malloc(valuesize);
-    if (value == NULL)
-    {
-      free(key);
-      return -1;
-    }
-
-    memcpy(key, item->data + 8, keysize);
-    memcpy(value, item->data + 8 + keysize, valuesize);
-
-    write(item->fd, value, valuesize);
-
-    free(key);
-    free(value);
-    break;
-  
+    return processor_set(item);
+  case 2:
+    return processor_get(item);
   default:
-    break;
+    return -1;
   }
 }
 
@@ -163,6 +203,7 @@ int processsor_enqueue(int fd, unsigned int size, unsigned int id, unsigned shor
 
 int processor_setup_workers(void)
 {
+  if (table_setup() == NULL) return -1;
   for (unsigned int iw = 0; iw < PROCESSOR_WORKERS; ++iw)
     if (pthread_create(&proc.workers[iw], NULL, processor_worker_fn, NULL) < 0)
     {

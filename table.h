@@ -45,7 +45,7 @@ typedef struct table
   struct table_s **s;
 } table;
 
-table *table_setup();
+table *table_setup(void);
 int table_del(const char*);
 int table_add(unsigned int, unsigned long, char*, char*);
 table_s *table_getbk(const char*);

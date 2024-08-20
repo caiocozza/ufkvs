@@ -248,7 +248,7 @@ table_s *table_getbk(const char *key)
   return NULL;
 }
 
-table *table_setup()
+table *table_setup(void)
 {
   if (table_default.init) return &table_default;
   if (pthread_rwlock_init(&table_default.rwl, NULL) != 0) goto table_setup_error;
